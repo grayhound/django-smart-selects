@@ -33,8 +33,7 @@ class ChainedSelect(Select):
     class Media:
         if USE_DJANGO_JQUERY:
             if DISABLE_JQUERY:
-                js = [static('admin/%s' % i) for i in
-                        ('js/jquery.init.js')]
+                js = (static('admin/js/jquery.init.js'),)
             else:
                 js = [static('admin/%s' % i) for i in
                         ('js/jquery.min.js', 'js/jquery.init.js')]
