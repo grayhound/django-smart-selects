@@ -31,13 +31,17 @@ class ChainedSelect(Select):
         super(Select, self).__init__(*args, **kwargs)
 
     class Media:
-        if not DISABLE_JQUERY:
-            if USE_DJANGO_JQUERY:
+        if USE_DJANGO_JQUERY:
+            if DISABLE_JQUERY:
                 js = [static('admin/%s' % i) for i in
-                      ('js/jquery.min.js', 'js/jquery.init.js')]
-            elif JQUERY_URL:
+                        ('js/jquery.init.js')]
+            else:
+                js = [static('admin/%s' % i) for i in
+                        ('js/jquery.min.js', 'js/jquery.init.js')]
+        elif JQUERY_URL:
+            if not DISABLE_JQUERY:
                 js = (
-                    JQUERY_URL,
+                      JQUERY_URL,
                 )
 
     def render(self, name, value, attrs = None, choices = ()):
