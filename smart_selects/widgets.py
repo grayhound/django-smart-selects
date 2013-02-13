@@ -17,9 +17,10 @@ else:
     USE_DJANGO_JQUERY = False
     JQUERY_URL = getattr(settings, 'JQUERY_URL', 'http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js')
 
+DISABLE_JQUERY = getattr(settings, 'SMART_SELECTS_DISABLE_JQUERY', False)
 
 class ChainedSelect(Select):
-    def __init__(self, app_name, model_name, chain_field, model_field, show_all, auto_choose, manager=None, *args, **kwargs):
+    def __init__(self, app_name, model_name, chain_field, model_field, show_all, auto_choose, manager = None, *args, **kwargs):
         self.app_name = app_name
         self.model_name = model_name
         self.chain_field = chain_field
@@ -30,15 +31,16 @@ class ChainedSelect(Select):
         super(Select, self).__init__(*args, **kwargs)
 
     class Media:
-        if USE_DJANGO_JQUERY:
-            js = [static('admin/%s' % i) for i in
-                  ('js/jquery.min.js', 'js/jquery.init.js')]
-        elif JQUERY_URL:
-            js = (
-                JQUERY_URL,
-            )
+        if not DISABLE_JQUERY:
+            if USE_DJANGO_JQUERY:
+                js = [static('admin/%s' % i) for i in
+                      ('js/jquery.min.js', 'js/jquery.init.js')]
+            elif JQUERY_URL:
+                js = (
+                    JQUERY_URL,
+                )
 
-    def render(self, name, value, attrs=None, choices=()):
+    def render(self, name, value, attrs = None, choices = ()):
         if len(name.split('-')) > 1: # formset
             chain_field = '-'.join(name.split('-')[:-1] + [self.chain_field])
         else:
@@ -51,7 +53,7 @@ class ChainedSelect(Select):
         kwargs = {'app':self.app_name, 'model':self.model_name, 'field':self.model_field, 'value':"1"}
         if self.manager is not None:
             kwargs.update({'manager': self.manager})
-        url = "/".join(reverse(view_name, kwargs=kwargs).split("/")[:-2])
+        url = "/".join(reverse(view_name, kwargs = kwargs).split("/")[:-2])
         if self.auto_choose:
             auto_choose = 'true'
         else:
@@ -145,22 +147,22 @@ class ChainedSelect(Select):
         final_choices = []
 
         if value:
-            item = self.queryset.filter(pk=value)[0]
+            item = self.queryset.filter(pk = value)[0]
             try:
                 pk = getattr(item, self.model_field + "_id")
                 filter = {self.model_field:pk}
             except AttributeError:
                 try: # maybe m2m?
-                    pks = getattr(item, self.model_field).all().values_list('pk', flat=True)
+                    pks = getattr(item, self.model_field).all().values_list('pk', flat = True)
                     filter = {self.model_field + "__in":pks}
                 except AttributeError:
                     try: # maybe a set?
-                        pks = getattr(item, self.model_field + "_set").all().values_list('pk', flat=True)
+                        pks = getattr(item, self.model_field + "_set").all().values_list('pk', flat = True)
                         filter = {self.model_field + "__in":pks}
                     except: # give up
                         filter = {}
             filtered = list(get_model(self.app_name, self.model_name).objects.filter(**filter).distinct())
-            filtered.sort(cmp=locale.strcoll, key=lambda x:unicode_sorter(unicode(x)))
+            filtered.sort(cmp = locale.strcoll, key = lambda x:unicode_sorter(unicode(x)))
             for choice in filtered:
                 final_choices.append((choice.pk, unicode(choice)))
         if len(final_choices) > 1:
@@ -168,16 +170,16 @@ class ChainedSelect(Select):
         if self.show_all:
             final_choices.append(("", (empty_label)))
             self.choices = list(self.choices)
-            self.choices.sort(cmp=locale.strcoll, key=lambda x:unicode_sorter(x[1]))
+            self.choices.sort(cmp = locale.strcoll, key = lambda x:unicode_sorter(x[1]))
             for ch in self.choices:
                 if not ch in final_choices:
                     final_choices.append(ch)
         self.choices = ()
-        final_attrs = self.build_attrs(attrs, name=name)
+        final_attrs = self.build_attrs(attrs, name = name)
         if 'class' in final_attrs:
             final_attrs['class'] += ' chained'
         else:
             final_attrs['class'] = 'chained'
-        output = super(ChainedSelect, self).render(name, value, final_attrs, choices=final_choices)
+        output = super(ChainedSelect, self).render(name, value, final_attrs, choices = final_choices)
         output += js
         return mark_safe(output)
